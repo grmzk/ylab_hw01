@@ -8,6 +8,14 @@ class MenuReadSchema(BaseModel):
     id: UUID4 | None
     title: str
     description: str
+
+    # Я понимаю, что такая реализация получения `submenus_count`
+    # и `dishes_count` слишком затратна с точки зрения количества
+    # запросов к БД.
+    # Намного логичнее было бы использовать `sqlalchemy.func.count()`
+    # и join-ы при получении данных из БД, но я впервые работаю
+    # с FastAPI, SQLAlchemy и Pydantic и не успел разобраться с этим
+    # к дедлайну(
     submenus: list = Field(serialization_alias="submenus_count")
     dishes_count: int = 0
 
