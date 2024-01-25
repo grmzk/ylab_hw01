@@ -22,7 +22,7 @@ services:
       - application
 
   db:
-    image: postgres:15-alpine
+    image: postgres:15.1-alpine
     ports:
       - "5432:5432"
     volumes:
