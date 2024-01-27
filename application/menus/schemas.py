@@ -1,34 +1,13 @@
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, Field
 from pydantic.types import UUID4
 
 
 class MenuReadSchema(BaseModel):
-    model_config = ConfigDict(extra='allow')
-
     id: UUID4 | None
     title: str
     description: str
-
-    # Я понимаю, что такая реализация получения `submenus_count`
-    # и `dishes_count` слишком затратна с точки зрения количества
-    # запросов к БД.
-    # Намного логичнее было бы использовать `sqlalchemy.func.count()`
-    # и join-ы при получении данных из БД, но я впервые работаю
-    # с FastAPI, SQLAlchemy и Pydantic и не успел разобраться с этим
-    # к дедлайну(
-    submenus: list = Field(serialization_alias="submenus_count")
+    submenus_count: int = 0
     dishes_count: int = 0
-
-    @field_serializer("submenus")
-    def get_submenus_count(self, submenus: list) -> int:
-        return len(submenus)
-
-    @field_serializer("dishes_count")
-    def get_dishes_count(self, arg) -> int:
-        dishes_count = 0
-        for submenu in self.submenus:
-            dishes_count += len(submenu.dishes)
-        return dishes_count
 
 
 class MenuWriteSchema(BaseModel):
@@ -40,11 +19,7 @@ class SubmenuReadSchema(BaseModel):
     id: UUID4 | None
     title: str
     description: str
-    dishes: list = Field(serialization_alias="dishes_count")
-
-    @field_serializer("dishes")
-    def get_dishes_count(self, dishes: list) -> int:
-        return len(dishes)
+    dishes_count: int = 0
 
 
 class SubmenuWriteSchema(BaseModel):

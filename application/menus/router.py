@@ -1,14 +1,15 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends
+from starlette import status
+from starlette.responses import JSONResponse
 
 from database import Session, get_session
 from menus.models import Dish, Menu, Submenu
 from menus.schemas import (DishReadSchema, DishWriteSchema, MenuReadSchema,
                            MenuWriteSchema, SubmenuReadSchema,
                            SubmenuWriteSchema)
-from menus.utils import get_or_404
+from menus.utils.jsonresponse404 import JSONResponse404
 
 router = APIRouter(
     prefix="/api/v1"
@@ -17,7 +18,7 @@ router = APIRouter(
 
 @router.get("/menus", status_code=status.HTTP_200_OK, tags=["Menus"])
 def get_menus(session: Session = Depends(get_session)) -> list[MenuReadSchema]:
-    return session.query(Menu).all()
+    return Menu.get_schema_objects(session)
 
 
 @router.post("/menus", status_code=status.HTTP_201_CREATED, tags=["Menus"])
@@ -33,28 +34,28 @@ def create_menu(menu_input: MenuWriteSchema,
             status_code=status.HTTP_200_OK, tags=["Menus"])
 def get_menu(menu_id: UUID,
              session: Session = Depends(get_session)) -> MenuReadSchema:
-    return get_or_404(Menu, menu_id, session)
+    return Menu.get_schema_obj_or_404(session, menu_id)
 
 
 @router.patch("/menus/{menu_id}",
               status_code=status.HTTP_200_OK, tags=["Menus"])
 def update_menu(menu_id: UUID, menu_input: MenuWriteSchema,
                 session: Session = Depends(get_session)) -> MenuReadSchema:
-    menu = get_or_404(Menu, menu_id, session)
-    if menu.__class__ is not Menu:
+    menu = Menu.get_or_404(session, menu_id)
+    if menu.__class__ is JSONResponse404:
         return menu  # response with http code 404
     menu.update(**menu_input.model_dump())
     session.add(menu)
     session.commit()
-    return menu
+    return Menu.get_schema_obj_or_404(session, menu_id)
 
 
 @router.delete("/menus/{menu_id}",
                status_code=status.HTTP_200_OK, tags=["Menus"])
 def delete_menu(menu_id: UUID,
                 session: Session = Depends(get_session)) -> JSONResponse:
-    menu = get_or_404(Menu, menu_id, session)
-    if menu.__class__ is not Menu:
+    menu = Menu.get_or_404(session, menu_id)
+    if menu.__class__ is JSONResponse404:
         return menu  # response with http code 404
     session.delete(menu)
     session.commit()
@@ -67,10 +68,10 @@ def delete_menu(menu_id: UUID,
 def get_submenus(menu_id: UUID,
                  session: Session = Depends(get_session)
                  ) -> list[SubmenuReadSchema]:
-    menu = get_or_404(Menu, menu_id, session)
-    if menu.__class__ is not Menu:
+    menu = Menu.get_or_404(session, menu_id)
+    if menu.__class__ is JSONResponse404:
         return menu  # response with http code 404
-    return menu.submenus
+    return Submenu.get_schema_objects_by_menu(session, menu_id)
 
 
 @router.post("/menus/{menu_id}/submenus",
@@ -79,8 +80,8 @@ def create_submenu(menu_id: UUID,
                    submenu_input: SubmenuWriteSchema,
                    session: Session = Depends(get_session)
                    ) -> SubmenuReadSchema:
-    menu = get_or_404(Menu, menu_id, session)
-    if menu.__class__ is not Menu:
+    menu = Menu.get_or_404(session, menu_id)
+    if menu.__class__ is JSONResponse404:
         return menu  # response with http code 404
     new_submenu = Submenu(**submenu_input.model_dump())
     menu.submenus.append(new_submenu)
@@ -92,16 +93,17 @@ def create_submenu(menu_id: UUID,
             status_code=status.HTTP_200_OK, tags=["Submenus"])
 def get_submenu(menu_id: UUID,
                 submenu_id: UUID,
-                session: Session = Depends(get_session)) -> SubmenuReadSchema:
-    submenu = get_or_404(Submenu, submenu_id, session)
-    if submenu.__class__ is not Submenu:
+                session: Session = Depends(get_session)
+                ) -> SubmenuReadSchema:
+    submenu = Submenu.get_or_404(session, submenu_id)
+    if submenu.__class__ is JSONResponse404:
         return submenu  # response with http code 404
     if not submenu.check_parent_menu(menu_id):
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"detail": "menu id incorrect"}
         )
-    return submenu
+    return Submenu.get_schema_obj_or_404(session, submenu_id)
 
 
 @router.patch("/menus/{menu_id}/submenus/{submenu_id}",
@@ -111,8 +113,8 @@ def update_submenu(menu_id: UUID,
                    submenu_input: SubmenuWriteSchema,
                    session: Session = Depends(get_session)
                    ) -> SubmenuReadSchema:
-    submenu = get_or_404(Submenu, submenu_id, session)
-    if submenu.__class__ is not Submenu:
+    submenu = Submenu.get_or_404(session, submenu_id)
+    if submenu.__class__ is JSONResponse404:
         return submenu  # response with http code 404
     if not submenu.check_parent_menu(menu_id):
         return JSONResponse(
@@ -122,7 +124,7 @@ def update_submenu(menu_id: UUID,
     submenu.update(**submenu_input.model_dump())
     session.add(submenu)
     session.commit()
-    return submenu
+    return Submenu.get_schema_obj_or_404(session, submenu_id)
 
 
 @router.delete("/menus/{menu_id}/submenus/{submenu_id}",
@@ -130,8 +132,8 @@ def update_submenu(menu_id: UUID,
 def delete_submenu(menu_id: UUID,
                    submenu_id: UUID,
                    session: Session = Depends(get_session)) -> JSONResponse:
-    submenu = get_or_404(Submenu, submenu_id, session)
-    if submenu.__class__ is not Submenu:
+    submenu = Submenu.get_or_404(session, submenu_id)
+    if submenu.__class__ is JSONResponse404:
         return submenu  # response with http code 404
     if not submenu.check_parent_menu(menu_id):
         return JSONResponse(
@@ -150,8 +152,8 @@ def get_dishes(menu_id: UUID,
                submenu_id: UUID,
                session: Session = Depends(get_session)
                ) -> list[DishReadSchema]:
-    submenu = get_or_404(Submenu, submenu_id, session)
-    if submenu.__class__ is not Submenu:
+    submenu = Submenu.get_or_404(session, submenu_id)
+    if submenu.__class__ is JSONResponse404:
         # return submenu  # response with http code 404
         return list()  # this is illogical, but necessary for postman tests
     if not submenu.check_parent_menu(menu_id):
@@ -159,7 +161,7 @@ def get_dishes(menu_id: UUID,
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"detail": "menu id incorrect"}
         )
-    return submenu.dishes
+    return Dish.get_schema_objects_by_submenu(session, submenu_id)
 
 
 @router.post("/menus/{menu_id}/submenus/{submenu_id}/dishes",
@@ -168,8 +170,8 @@ def create_dish(menu_id: UUID,
                 submenu_id: UUID,
                 dish_input: DishWriteSchema,
                 session: Session = Depends(get_session)) -> DishReadSchema:
-    submenu = get_or_404(Submenu, submenu_id, session)
-    if submenu.__class__ is not Submenu:
+    submenu = Submenu.get_or_404(session, submenu_id)
+    if submenu.__class__ is JSONResponse404:
         return submenu  # response with http code 404
     if not submenu.check_parent_menu(menu_id):
         return JSONResponse(
@@ -188,8 +190,8 @@ def get_dish(menu_id: UUID,
              submenu_id: UUID,
              dish_id: UUID,
              session: Session = Depends(get_session)) -> DishReadSchema:
-    dish = get_or_404(Dish, dish_id, session)
-    if dish.__class__ is not Dish:
+    dish = Dish.get_or_404(session, dish_id)
+    if dish.__class__ is JSONResponse404:
         return dish  # response with http code 404
     if not ((dish.check_parent_submenu(submenu_id)
              and dish.submenu.check_parent_menu(menu_id))):
@@ -207,8 +209,8 @@ def update_dish(menu_id: UUID,
                 dish_id: UUID,
                 dish_input: DishWriteSchema,
                 session: Session = Depends(get_session)) -> DishReadSchema:
-    dish = get_or_404(Dish, dish_id, session)
-    if dish.__class__ is not Dish:
+    dish = Dish.get_or_404(session, dish_id)
+    if dish.__class__ is JSONResponse404:
         return dish  # response with http code 404
     if not ((dish.check_parent_submenu(submenu_id)
              and dish.submenu.check_parent_menu(menu_id))):
@@ -228,8 +230,8 @@ def delete_dish(menu_id: UUID,
                 submenu_id: UUID,
                 dish_id: UUID,
                 session: Session = Depends(get_session)) -> JSONResponse:
-    dish = get_or_404(Dish, dish_id, session)
-    if dish.__class__ is not Dish:
+    dish = Dish.get_or_404(session, dish_id)
+    if dish.__class__ is JSONResponse404:
         return dish  # response with http code 404
     if not ((dish.check_parent_submenu(submenu_id)
              and dish.submenu.check_parent_menu(menu_id))):
