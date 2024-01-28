@@ -22,9 +22,11 @@ git clone git@github.com:grmzk/ylab_hw01.git
 cd ylab_hw01/infra/
 ```
 
-Для работы с другой СУБД отредактировать `.env`
+Отредактировать `.env`
 
 ```
+COMPOSE_PROJECT_NAME=ylab_hw02
+
 POSTGRES_HOST=db            # адрес хоста с БД
 POSTGRES_PORT=5432          # порт для подключения к БД
 POSTGRES_DB=postgres        # название БД
@@ -32,21 +34,65 @@ POSTGRES_USER=postgres      # имя пользователя БД
 POSTGRES_PASSWORD=postgres  # пароль пользователя БД
 ```
 
-Собрать контейнер и запустить Menus:
+Собрать контейнер и запустить:
 
 ```
-docker-compose up -d
+docker-compose up --build -d
 ```
 
 Выполнить (только после первой сборки):
 
 ```
-docker-compose exec application alembic upgrade head
+docker-compose exec app alembic upgrade head
 ```
 
 ##### Эндпоинты
 
 [Полный список эндпоинтов](http://127.0.0.1/api/docs/)
+
+##### ТЕСТЫ
+
+Клонировать репозиторий и перейти в директорию `infra_tests` 
+в командной строке:
+
+```
+git clone git@github.com:grmzk/ylab_hw01.git
+```
+
+```
+cd ylab_hw01/infra_tests/
+```
+
+Отредактировать `.env`
+
+```
+COMPOSE_PROJECT_NAME=ylab_hw02_tests
+
+POSTGRES_HOST=db                # адрес хоста с БД
+POSTGRES_PORT=5432              # порт для подключения к БД
+POSTGRES_DB=postgres_tests      # название БД
+POSTGRES_USER=postgres          # имя пользователя БД
+POSTGRES_PASSWORD=postgres      # пароль пользователя БД
+
+# Переменные окружения для pytest
+POSTGRES_HOST_TEST=db
+POSTGRES_PORT_TEST=5432
+POSTGRES_DB_TEST=postgres_tests
+POSTGRES_USER_TEST=postgres
+POSTGRES_PASSWORD_TEST=postgres
+```
+
+Собрать контейнер и запустить:
+
+```
+docker-compose up --build -d
+```
+
+Выполнить:
+
+```
+docker-compose exec app pytest -vv
+```
 
 ##### Авторы
 - Игорь Музыка [mailto:igor@mail.fake]
