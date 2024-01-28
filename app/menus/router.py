@@ -11,9 +11,7 @@ from menus.schemas import (DishReadSchema, DishWriteSchema, MenuReadSchema,
                            SubmenuWriteSchema)
 from menus.utils.jsonresponse404 import JSONResponse404
 
-router = APIRouter(
-    prefix="/api/v1"
-)
+router = APIRouter(prefix="/api/v1")
 
 
 @router.get("/menus", status_code=status.HTTP_200_OK, tags=["Menus"])

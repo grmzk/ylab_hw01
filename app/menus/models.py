@@ -3,12 +3,12 @@ import uuid
 from sqlalchemy import UUID, Column, ForeignKey, String, func
 from sqlalchemy.orm import Query, relationship
 
-from database import Session
+from database import Session, Base
 from menus.schemas import DishReadSchema, MenuReadSchema, SubmenuReadSchema
 from menus.utils.extendedbase import ExtendedBase
 
 
-class Menu(ExtendedBase):
+class Menu(ExtendedBase, Base):
     __schema__ = MenuReadSchema
 
     __tablename__ = "menus"
@@ -30,7 +30,7 @@ class Menu(ExtendedBase):
             .group_by(Menu.id))
 
 
-class Submenu(ExtendedBase):
+class Submenu(ExtendedBase, Base):
     __schema__ = SubmenuReadSchema
 
     __tablename__ = "submenus"
@@ -62,7 +62,7 @@ class Submenu(ExtendedBase):
             .group_by(Submenu.id))
 
 
-class Dish(ExtendedBase):
+class Dish(ExtendedBase, Base):
     __schema__ = DishReadSchema
 
     __tablename__ = "dishes"
