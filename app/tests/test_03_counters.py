@@ -1,113 +1,170 @@
-import uuid
-
-from starlette import status
-
 from conftest import client
 from data import (dish_request_body1, dish_request_body2, dish_request_body3,
                   menu_request_body1, menu_request_body2, menu_request_body3,
                   submenu_request_body1, submenu_request_body2,
                   submenu_request_body3)
+from sqlalchemy.orm import Session
 
-menu_id1: uuid = None
-menu_id2: uuid = None
-menu_id3: uuid = None
-submenu_id1: uuid = None
-submenu_id2: uuid = None
-submenu_id3: uuid = None
-dish_id1: uuid = None
-dish_id2: uuid = None
-dish_id3: uuid = None
+from menus.models import Dish, Menu, Submenu
 
 
-def test_menu_submenus_count_zero():
-    global menu_id1, menu_id2, menu_id3
-    response = client.post("/menus", json=menu_request_body1)
-    menu_id1 = response.json()["id"]
-    response = client.post("/menus", json=menu_request_body2)
-    menu_id2 = response.json()["id"]
-    response = client.post("/menus", json=menu_request_body3)
-    menu_id3 = response.json()["id"]
-    for menu_id in (menu_id1, menu_id2, menu_id3):
-        response = client.get(f"/menus/{menu_id}")
+def test_menu_submenus_count_zero(test_session: Session):
+    menu1 = Menu(**menu_request_body1)
+    menu2 = Menu(**menu_request_body2)
+    menu3 = Menu(**menu_request_body3)
+    test_session.add_all([menu1, menu2, menu3])
+    test_session.commit()
+    for menu in (menu1, menu2, menu3):
+        response = client.get(f"/menus/{menu.id}")
         assert response.json()["submenus_count"] == 0
+    test_session.delete(menu1)
+    test_session.delete(menu2)
+    test_session.delete(menu3)
+    test_session.commit()
 
 
-def test_menu_dishes_count_zero():
-    for menu_id in (menu_id1, menu_id2, menu_id3):
-        response = client.get(f"/menus/{menu_id}")
+def test_menu_dishes_count_zero(test_session: Session):
+    menu1 = Menu(**menu_request_body1)
+    menu2 = Menu(**menu_request_body2)
+    menu3 = Menu(**menu_request_body3)
+    test_session.add_all([menu1, menu2, menu3])
+    test_session.commit()
+    for menu in (menu1, menu2, menu3):
+        response = client.get(f"/menus/{menu.id}")
         assert response.json()["dishes_count"] == 0
+    test_session.delete(menu1)
+    test_session.delete(menu2)
+    test_session.delete(menu3)
+    test_session.commit()
 
 
-def test_menu_submenus_count():
-    global submenu_id1, submenu_id2, submenu_id3
-    response = client.post(f"/menus/{menu_id1}/submenus",
-                           json=submenu_request_body1)
-    submenu_id1 = response.json()["id"]
-    response = client.post(f"/menus/{menu_id1}/submenus",
-                           json=submenu_request_body2)
-    submenu_id2 = response.json()["id"]
-    response = client.post(f"/menus/{menu_id2}/submenus",
-                           json=submenu_request_body3)
-    submenu_id3 = response.json()["id"]
-    response = client.get(f"/menus/{menu_id1}")
+def test_menu_submenus_count(test_session: Session):
+    menu1 = Menu(**menu_request_body1)
+    submenu1 = Submenu(**submenu_request_body1)
+    submenu2 = Submenu(**submenu_request_body2)
+    menu1.submenus.append(submenu1)
+    menu1.submenus.append(submenu2)
+    menu2 = Menu(**menu_request_body2)
+    submenu3 = Submenu(**submenu_request_body3)
+    menu2.submenus.append(submenu3)
+    menu3 = Menu(**menu_request_body3)
+    test_session.add_all([menu1, menu2, menu3])
+    test_session.commit()
+    response = client.get(f"/menus/{menu1.id}")
     assert response.json()["submenus_count"] == 2
-    response = client.get(f"/menus/{menu_id2}")
+    response = client.get(f"/menus/{menu2.id}")
     assert response.json()["submenus_count"] == 1
-    response = client.get(f"/menus/{menu_id3}")
+    response = client.get(f"/menus/{menu3.id}")
     assert response.json()["submenus_count"] == 0
+    test_session.delete(menu1)
+    test_session.delete(menu2)
+    test_session.delete(menu3)
+    test_session.commit()
 
 
-def test_menu_dishes_count():
-    global dish_id1, dish_id2, dish_id3
-    response = client.post(f"/menus/{menu_id1}/submenus/{submenu_id1}/dishes",
-                           json=dish_request_body1)
-    dish_id1 = response.json()["id"]
-    response = client.post(f"/menus/{menu_id1}/submenus/{submenu_id1}/dishes",
-                           json=dish_request_body2)
-    dish_id2 = response.json()["id"]
-    response = client.post(f"/menus/{menu_id1}/submenus/{submenu_id2}/dishes",
-                           json=dish_request_body3)
-    dish_id3 = response.json()["id"]
-    response = client.get(f"/menus/{menu_id1}")
+def test_menu_dishes_count(test_session: Session):
+    menu1 = Menu(**menu_request_body1)
+    submenu1 = Submenu(**submenu_request_body1)
+    dish1 = Dish(**dish_request_body1)
+    dish2 = Dish(**dish_request_body2)
+    submenu1.dishes.append(dish1)
+    submenu1.dishes.append(dish2)
+    submenu2 = Submenu(**submenu_request_body2)
+    dish3 = Dish(**dish_request_body3)
+    submenu2.dishes.append(dish3)
+    menu1.submenus.append(submenu1)
+    menu1.submenus.append(submenu2)
+    menu2 = Menu(**menu_request_body2)
+    submenu3 = Submenu(**submenu_request_body3)
+    menu2.submenus.append(submenu3)
+    menu3 = Menu(**menu_request_body3)
+    test_session.add_all([menu1, menu2, menu3])
+    test_session.commit()
+    response = client.get(f"/menus/{menu1.id}")
     assert response.json()["dishes_count"] == 3
-    response = client.get(f"/menus/{menu_id2}")
+    response = client.get(f"/menus/{menu2.id}")
     assert response.json()["dishes_count"] == 0
-    response = client.get(f"/menus/{menu_id3}")
+    response = client.get(f"/menus/{menu3.id}")
     assert response.json()["dishes_count"] == 0
+    test_session.delete(menu1)
+    test_session.delete(menu2)
+    test_session.delete(menu3)
+    test_session.commit()
 
 
-def test_submenu_dishes_count():
-    response = client.get(f"/menus/{menu_id1}/submenus/{submenu_id1}")
+def test_submenu_dishes_count(test_session: Session):
+    menu1 = Menu(**menu_request_body1)
+    submenu1 = Submenu(**submenu_request_body1)
+    dish1 = Dish(**dish_request_body1)
+    dish2 = Dish(**dish_request_body2)
+    submenu1.dishes.append(dish1)
+    submenu1.dishes.append(dish2)
+    submenu2 = Submenu(**submenu_request_body2)
+    dish3 = Dish(**dish_request_body3)
+    submenu2.dishes.append(dish3)
+    menu1.submenus.append(submenu1)
+    menu1.submenus.append(submenu2)
+    menu2 = Menu(**menu_request_body2)
+    submenu3 = Submenu(**submenu_request_body3)
+    menu2.submenus.append(submenu3)
+    menu3 = Menu(**menu_request_body3)
+    test_session.add_all([menu1, menu2, menu3])
+    test_session.commit()
+    response = client.get(f"/menus/{menu1.id}/submenus/{submenu1.id}")
     assert response.json()["dishes_count"] == 2
-    response = client.get(f"/menus/{menu_id1}/submenus/{submenu_id2}")
+    response = client.get(f"/menus/{menu1.id}/submenus/{submenu2.id}")
     assert response.json()["dishes_count"] == 1
-    response = client.get(f"/menus/{menu_id2}/submenus/{submenu_id3}")
+    response = client.get(f"/menus/{menu2.id}/submenus/{submenu3.id}")
     assert response.json()["dishes_count"] == 0
+    test_session.delete(menu1)
+    test_session.delete(menu2)
+    test_session.delete(menu3)
+    test_session.commit()
 
 
-def test_menu_submenus_count_after_submenu_delete():
-    client.delete(f"/menus/{menu_id1}/submenus/{submenu_id1}")
-    response = client.get(f"/menus/{menu_id1}")
+def test_menu_submenus_count_after_submenu_delete(test_session: Session):
+    menu1 = Menu(**menu_request_body1)
+    submenu1 = Submenu(**submenu_request_body1)
+    dish1 = Dish(**dish_request_body1)
+    dish2 = Dish(**dish_request_body2)
+    submenu1.dishes.append(dish1)
+    submenu1.dishes.append(dish2)
+    submenu2 = Submenu(**submenu_request_body2)
+    dish3 = Dish(**dish_request_body3)
+    submenu2.dishes.append(dish3)
+    menu1.submenus.append(submenu1)
+    menu1.submenus.append(submenu2)
+    test_session.add(menu1)
+    test_session.commit()
+    response = client.get(f"/menus/{menu1.id}")
+    assert response.json()["submenus_count"] == 2
+    test_session.delete(submenu1)
+    test_session.commit()
+    response = client.get(f"/menus/{menu1.id}")
     assert response.json()["submenus_count"] == 1
-    response = client.get(f"/menus/{menu_id2}")
-    assert response.json()["submenus_count"] == 1
-    response = client.get(f"/menus/{menu_id3}")
-    assert response.json()["submenus_count"] == 0
+    test_session.delete(menu1)
+    test_session.commit()
 
 
-def test_menu_dishes_count_after_submenu_delete():
-    response = client.get(f"/menus/{menu_id1}")
+def test_menu_dishes_count_after_submenu_delete(test_session: Session):
+    menu1 = Menu(**menu_request_body1)
+    submenu1 = Submenu(**submenu_request_body1)
+    dish1 = Dish(**dish_request_body1)
+    dish2 = Dish(**dish_request_body2)
+    submenu1.dishes.append(dish1)
+    submenu1.dishes.append(dish2)
+    submenu2 = Submenu(**submenu_request_body2)
+    dish3 = Dish(**dish_request_body3)
+    submenu2.dishes.append(dish3)
+    menu1.submenus.append(submenu1)
+    menu1.submenus.append(submenu2)
+    test_session.add(menu1)
+    test_session.commit()
+    response = client.get(f"/menus/{menu1.id}")
+    assert response.json()["dishes_count"] == 3
+    test_session.delete(submenu1)
+    test_session.commit()
+    response = client.get(f"/menus/{menu1.id}")
     assert response.json()["dishes_count"] == 1
-    response = client.get(f"/menus/{menu_id2}")
-    assert response.json()["dishes_count"] == 0
-    response = client.get(f"/menus/{menu_id3}")
-    assert response.json()["dishes_count"] == 0
-
-
-def test_all_menu_delete():
-    client.delete(f"/menus/{menu_id1}")
-    client.delete(f"/menus/{menu_id2}")
-    client.delete(f"/menus/{menu_id3}")
-    response = client.get("/menus")
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    test_session.delete(menu1)
+    test_session.commit()

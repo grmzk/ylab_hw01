@@ -1,13 +1,14 @@
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from starlette.testclient import TestClient
+
 from config import (POSTGRES_DB_TEST, POSTGRES_HOST_TEST,
                     POSTGRES_PASSWORD_TEST, POSTGRES_PORT_TEST,
                     POSTGRES_USER_TEST)
 from database import Base as Base_menus
 from database import get_session
 from main import app
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from starlette.testclient import TestClient
 
 DATABASE_URL_TEST = (
     f"postgresql://{POSTGRES_USER_TEST}:{POSTGRES_PASSWORD_TEST}"
@@ -27,6 +28,15 @@ def override_get_session():
 
 
 app.dependency_overrides[get_session] = override_get_session
+
+
+@pytest.fixture(scope="function")
+def test_session():
+    db = SessionTest()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @pytest.fixture(scope="session", autouse=True)

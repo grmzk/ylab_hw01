@@ -22,7 +22,13 @@ git clone git@github.com:grmzk/ylab_hw01.git
 cd ylab_hw01/infra/
 ```
 
-Отредактировать `.env`
+Копировать файл `.env.example` в файл `.env`:
+
+```
+cp -v .env.example .env
+```
+
+При необходимости отредактировать содержимое файла `.env`:
 
 ```
 COMPOSE_PROJECT_NAME=ylab_hw02
@@ -50,7 +56,7 @@ docker-compose exec app alembic upgrade head
 
 [Полный список эндпоинтов](http://127.0.0.1/api/docs/)
 
-##### ТЕСТЫ
+### ТЕСТЫ
 
 Клонировать репозиторий и перейти в директорию `infra_tests` 
 в командной строке:
@@ -63,7 +69,13 @@ git clone git@github.com:grmzk/ylab_hw01.git
 cd ylab_hw01/infra_tests/
 ```
 
-Отредактировать `.env`
+Копировать файл `.env.example.test` в файл `.env`:
+
+```
+cp -v .env.example.test .env
+```
+
+При необходимости отредактировать содержимое файла `.env`:
 
 ```
 COMPOSE_PROJECT_NAME=ylab_hw02_tests

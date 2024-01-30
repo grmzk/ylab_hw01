@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import UUID, Column, ForeignKey, String, func
 from sqlalchemy.orm import Query, relationship
 
-from database import Session, Base
+from database import Base, Session
 from menus.schemas import DishReadSchema, MenuReadSchema, SubmenuReadSchema
 from menus.utils.extendedbase import ExtendedBase
 

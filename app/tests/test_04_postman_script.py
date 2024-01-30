@@ -1,8 +1,7 @@
 import uuid
 
-from starlette import status
-
 from conftest import client
+from starlette import status
 
 target_menu_id: uuid = None
 target_submenu_id: uuid = None
