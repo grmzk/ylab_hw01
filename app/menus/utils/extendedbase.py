@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from sqlalchemy import UUID, Row
 from sqlalchemy.orm import Query
 
@@ -21,6 +23,7 @@ class ExtendedBase(Base):
                 self.__table__.columns}
 
     @staticmethod
+    @abstractmethod
     def get_query(session: Session) -> Query:
         """Return query for get object from database.
         Query result format must be:
