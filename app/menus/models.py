@@ -4,7 +4,7 @@ from sqlalchemy import UUID, Column, ForeignKey, String
 from sqlalchemy.orm import relationship
 
 from database import Base
-from menus.utils.extendedbase import ExtendedBase
+from menus.utils.extended_base import ExtendedBase
 
 
 class Menu(ExtendedBase, Base):

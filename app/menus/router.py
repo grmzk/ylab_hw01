@@ -10,16 +10,19 @@ from menus.repositories import (DishRepository, MenuRepository,
 from menus.schemas import (DishReadSchema, DishWriteSchema, MenuReadSchema,
                            MenuWriteSchema, SubmenuReadSchema,
                            SubmenuWriteSchema)
+from menus.utils.response_cacher import cache_add, cache_delete
 
 router = APIRouter(prefix="/api/v1")
 
 
 @router.get("/menus", status_code=status.HTTP_200_OK, tags=["Menus"])
+@cache_add
 def get_menus(session: Session = Depends(get_session)) -> list[MenuReadSchema]:
     return MenuRepository(session).get_all()
 
 
 @router.post("/menus", status_code=status.HTTP_201_CREATED, tags=["Menus"])
+@cache_delete({"get_menus": []})
 def create_menu(menu_input: MenuWriteSchema,
                 session: Session = Depends(get_session)) -> MenuReadSchema:
     return MenuRepository(session).create(menu_input.model_dump())
@@ -27,6 +30,7 @@ def create_menu(menu_input: MenuWriteSchema,
 
 @router.get("/menus/{menu_id}",
             status_code=status.HTTP_200_OK, tags=["Menus"])
+@cache_add
 def get_menu(menu_id: UUID,
              session: Session = Depends(get_session)) -> MenuReadSchema:
     return MenuRepository(session).get(menu_id)
@@ -34,6 +38,8 @@ def get_menu(menu_id: UUID,
 
 @router.patch("/menus/{menu_id}",
               status_code=status.HTTP_200_OK, tags=["Menus"])
+@cache_delete({"get_menus": [],
+               "get_menu": ["menu_id"]})
 def update_menu(menu_id: UUID, menu_input: MenuWriteSchema,
                 session: Session = Depends(get_session)) -> MenuReadSchema:
     return MenuRepository(session).update(menu_id, menu_input.model_dump())
@@ -41,6 +47,12 @@ def update_menu(menu_id: UUID, menu_input: MenuWriteSchema,
 
 @router.delete("/menus/{menu_id}",
                status_code=status.HTTP_200_OK, tags=["Menus"])
+@cache_delete({"get_menus": [],
+               "get_menu": ["menu_id"],
+               "get_submenus": ["menu_id"],
+               "get_submenu+": ["menu_id"],
+               "get_dishes+": ["menu_id"],
+               "get_dish+": ["menu_id"]})
 def delete_menu(menu_id: UUID,
                 session: Session = Depends(get_session)) -> JSONResponse:
     return MenuRepository(session).delete(menu_id)
@@ -48,6 +60,7 @@ def delete_menu(menu_id: UUID,
 
 @router.get("/menus/{menu_id}/submenus",
             status_code=status.HTTP_200_OK, tags=["Submenus"])
+@cache_add
 def get_submenus(menu_id: UUID,
                  session: Session = Depends(get_session)
                  ) -> list[SubmenuReadSchema]:
@@ -56,6 +69,9 @@ def get_submenus(menu_id: UUID,
 
 @router.post("/menus/{menu_id}/submenus",
              status_code=status.HTTP_201_CREATED, tags=["Submenus"])
+@cache_delete({"get_menus": [],
+               "get_menu": ["menu_id"],
+               "get_submenus": ["menu_id"]})
 def create_submenu(menu_id: UUID,
                    submenu_input: SubmenuWriteSchema,
                    session: Session = Depends(get_session)
@@ -66,6 +82,7 @@ def create_submenu(menu_id: UUID,
 
 @router.get("/menus/{menu_id}/submenus/{submenu_id}",
             status_code=status.HTTP_200_OK, tags=["Submenus"])
+@cache_add
 def get_submenu(menu_id: UUID,
                 submenu_id: UUID,
                 session: Session = Depends(get_session)
@@ -75,6 +92,8 @@ def get_submenu(menu_id: UUID,
 
 @router.patch("/menus/{menu_id}/submenus/{submenu_id}",
               status_code=status.HTTP_200_OK, tags=["Submenus"])
+@cache_delete({"get_submenus": ["menu_id"],
+               "get_submenu": ["menu_id", "submenu_id"]})
 def update_submenu(menu_id: UUID,
                    submenu_id: UUID,
                    submenu_input: SubmenuWriteSchema,
@@ -87,6 +106,12 @@ def update_submenu(menu_id: UUID,
 
 @router.delete("/menus/{menu_id}/submenus/{submenu_id}",
                status_code=status.HTTP_200_OK, tags=["Submenus"])
+@cache_delete({"get_menus": [],
+               "get_menu": ["menu_id"],
+               "get_submenus": ["menu_id"],
+               "get_submenu": ["menu_id", "submenu_id"],
+               "get_dishes": ["menu_id", "submenu_id"],
+               "get_dish+": ["menu_id", "submenu_id"]})
 def delete_submenu(menu_id: UUID,
                    submenu_id: UUID,
                    session: Session = Depends(get_session)) -> JSONResponse:
@@ -95,6 +120,7 @@ def delete_submenu(menu_id: UUID,
 
 @router.get("/menus/{menu_id}/submenus/{submenu_id}/dishes",
             status_code=status.HTTP_200_OK, tags=["Dishes"])
+@cache_add
 def get_dishes(menu_id: UUID,
                submenu_id: UUID,
                session: Session = Depends(get_session)
@@ -104,6 +130,11 @@ def get_dishes(menu_id: UUID,
 
 @router.post("/menus/{menu_id}/submenus/{submenu_id}/dishes",
              status_code=status.HTTP_201_CREATED, tags=["Dishes"])
+@cache_delete({"get_menus": [],
+               "get_menu": ["menu_id"],
+               "get_submenus": ["menu_id"],
+               "get_submenu": ["menu_id", "submenu_id"],
+               "get_dishes": ["menu_id", "submenu_id"]})
 def create_dish(menu_id: UUID,
                 submenu_id: UUID,
                 dish_input: DishWriteSchema,
@@ -114,6 +145,7 @@ def create_dish(menu_id: UUID,
 
 @router.get("/menus/{menu_id}/submenus/{submenu_id}/dishes/{dish_id}",
             status_code=status.HTTP_200_OK, tags=["Dishes"])
+@cache_add
 def get_dish(menu_id: UUID,
              submenu_id: UUID,
              dish_id: UUID,
@@ -123,6 +155,8 @@ def get_dish(menu_id: UUID,
 
 @router.patch("/menus/{menu_id}/submenus/{submenu_id}/dishes/{dish_id}",
               status_code=status.HTTP_200_OK, tags=["Dishes"])
+@cache_delete({"get_dishes": ["menu_id", "submenu_id"],
+               "get_dish": ["menu_id", "submenu_id", "dish_id"]})
 def update_dish(menu_id: UUID,
                 submenu_id: UUID,
                 dish_id: UUID,
@@ -134,6 +168,12 @@ def update_dish(menu_id: UUID,
 
 @router.delete("/menus/{menu_id}/submenus/{submenu_id}/dishes/{dish_id}",
                status_code=status.HTTP_200_OK, tags=["Dishes"])
+@cache_delete({"get_menus": [],
+               "get_menu": ["menu_id"],
+               "get_submenus": ["menu_id"],
+               "get_submenu": ["menu_id", "submenu_id"],
+               "get_dishes": ["menu_id", "submenu_id"],
+               "get_dish": ["menu_id", "submenu_id", "dish_id"]})
 def delete_dish(menu_id: UUID,
                 submenu_id: UUID,
                 dish_id: UUID,

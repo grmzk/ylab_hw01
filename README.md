@@ -6,6 +6,7 @@ Docker-контейнер для развертывания проекта Menus
 - FastAPI 0.109.0
 - SQLAlchemy 2.0.25
 - Pydantic 2.5.3
+- Redis 5.0.1
 - PostgreSQL 15
 - Nginx 1.24
 - Docker

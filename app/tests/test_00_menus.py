@@ -8,6 +8,9 @@ from starlette import status
 from utils import check_keys, check_values
 
 from menus.models import Menu
+import os
+
+os.environ["RESPONSE_CACHER_DISABLE"] = "1"
 
 
 def test_get_menus_empty():
